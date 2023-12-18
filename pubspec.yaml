@@ -33,7 +33,11 @@ dependencies:
   http: ^1.1.2
   url_launcher: ^6.2.2
   fluttertoast: ^8.0.8
-
+  shared_preferences: ^2.0.10
+  mobx: ^2.0.2
+  flutter_mobx: ^2.0.3
+  build_runner: ^2.0.7
+  mobx_codegen: ^2.4.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

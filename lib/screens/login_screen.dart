@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'register_text_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -48,10 +50,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         print('Login bem-sucedido');
+
+        // Obtenha os textos salvos
+        List<String>? savedTexts = await loadTextsFromSharedPreferences();
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RegisterTextScreen(savedTexts)),
+        );
       } else {
         Fluttertoast.showToast(msg: 'Falha na autenticação. Verifique suas credenciais.');
       }
     }
+  }
+
+  Future<List<String>?> loadTextsFromSharedPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTexts = prefs.getStringList('savedTexts');
+    return savedTexts;
   }
 
   void openPrivacyPolicy() async {
