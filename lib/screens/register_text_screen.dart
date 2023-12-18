@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobx/mobx.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 part 'register_text_screen.g.dart';
 
 class RegisterTextScreen extends StatelessWidget {
   final TextRegisterStore store = TextRegisterStore();
-  final List<String>? savedTexts; // Lista de textos salvos
 
-  // Construtor modificado para receber a lista de textos
-  RegisterTextScreen(this.savedTexts) {
-    // Se há textos salvos, adiciona à store
-    if (savedTexts != null && savedTexts!.isNotEmpty) {
-      store.setTexts(savedTexts!);
+  RegisterTextScreen(List<String>? savedTexts) {
+    if (savedTexts != null) {
+      store.setTexts(savedTexts);
     }
   }
 
@@ -44,14 +43,19 @@ class RegisterTextScreen extends StatelessWidget {
                   child: Observer(
                     builder: (_) => Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.elliptical(5, 70),
+                            topRight: Radius.elliptical(5, 70),
+                            bottomLeft: Radius.elliptical(5, 70),
+                            bottomRight: Radius.elliptical(5, 70),
+                          )
                       ),
                       color: Colors.white,
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.all(8.0),
                         child: SingleChildScrollView(
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisSize: MainAxisSize.max,
                             children: _buildTextItems(context),
                           ),
                         ),
@@ -59,7 +63,7 @@ class RegisterTextScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 40),
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
@@ -67,14 +71,47 @@ class RegisterTextScreen extends StatelessWidget {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: TextField(
-                      controller: TextEditingController(text: store.text),
-                      onChanged: store.setText,
-                      onEditingComplete: () => _saveText(context),
-                      decoration: InputDecoration(
-                        hintText: 'Digite seu texto',
-                        border: InputBorder.none,
-                      ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          textAlign: TextAlign.center,
+                          controller: TextEditingController(text: store.text),
+                          onChanged: store.setText,
+                          onEditingComplete: () => _saveText(context),
+                          decoration: InputDecoration(
+                            hintText: 'Digite seu texto',
+                            hintStyle: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Colors.black,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          onSubmitted: (value) {
+                            if (value.isEmpty) {
+                              Fluttertoast.showToast(
+                                msg: 'Você precisa digitar algum texto!',
+                              );
+                            } else {
+                              Fluttertoast.showToast(
+                                  msg: "Texto salvo!",
+                              );
+                              _saveText(context);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 100),
+                GestureDetector(
+                  onTap: openPrivacyPolicy,
+                  child: const Text(
+                    'Política de Privacidade',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
                     ),
                   ),
                 ),
@@ -86,48 +123,55 @@ class RegisterTextScreen extends StatelessWidget {
     );
   }
 
+  void openPrivacyPolicy() async {
+    const url = 'https://www.google.com.br';
+    Uri new_url = Uri.parse(url);
+    if (await canLaunchUrl(new_url)) {
+      await launchUrl(new_url);
+    } else {
+      Fluttertoast.showToast(msg: 'Não foi possível abrir a política de privacidade.');
+    }
+  }
+
   List<Widget> _buildTextItems(BuildContext context) {
     final List<Widget> textItems = [];
-
-    // Adicione o texto atual como primeiro item
-    textItems.add(
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                store.text ?? 'Digite seu texto',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
     for (String text in store.texts) {
       textItems.add(
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
+          child: Column(
             children: [
-              Expanded(
-                child: Text(
-                  text,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _editText(context, text),
+                      child: Text(
+                        _truncateText(text),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.mode_edit),
+                    color: Colors.black,
+                    iconSize: 50,
+                    onPressed: () => _editText(context, text),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.cancel_rounded),
+                    color: Colors.red.shade600,
+                    iconSize: 50,
+                    onPressed: () =>
+                        _showDeleteConfirmationDialog(context, text),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: Icon(Icons.edit),
-                onPressed: () => _editText(context, text),
-              ),
-              IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () => _showDeleteConfirmationDialog(context, text),
-              ),
+              const Divider(color: Colors.black),
             ],
           ),
         ),
@@ -136,8 +180,15 @@ class RegisterTextScreen extends StatelessWidget {
     return textItems;
   }
 
+  String _truncateText(String text) {
+    const int maxLength = 20;
+    return text.length <= maxLength
+        ? text
+        : '${text.substring(0, maxLength)}...';
+  }
+
   Future<void> _showDeleteConfirmationDialog(
-      BuildContext context, String? text) async {
+      BuildContext context, String text) async {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -151,7 +202,7 @@ class RegisterTextScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                store.removeText(text ?? ''); // Usar valor padrão se text for nulo
+                store.removeText(text);
                 Navigator.of(context).pop();
               },
               child: Text('Excluir'),
@@ -162,17 +213,46 @@ class RegisterTextScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _editText(BuildContext context, [String? text]) async {
-    // Implemente a lógica de edição do texto aqui
-    // Pode abrir um novo dialog com um campo de texto pré-preenchido
-    // Você pode usar o método setText para atualizar o texto na store
+  Future<void> _editText(BuildContext context, String text) async {
+    TextEditingController editController = TextEditingController(text: text);
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Editar Texto'),
+          content: TextField(
+            controller: editController,
+            decoration: InputDecoration(
+              hintText: 'Digite seu texto',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                store.editText(text, editController.text);
+                Navigator.of(context).pop();
+              },
+              child: Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
+  bool saving = false;
+
   Future<void> _saveText(BuildContext context) async {
-    if (store.text != null && store.text!.isNotEmpty) {
+    if (!saving && store.text != null && store.text!.isNotEmpty) {
+      saving = true;
       store.addText(store.text!);
       await store.saveTextsToSharedPreferences();
       store.clearText();
+      saving = false;
     }
   }
 }
@@ -212,6 +292,15 @@ abstract class _TextRegisterStore with Store {
   @action
   void setTexts(List<String> texts) {
     this.texts = ObservableList<String>.of(texts);
+  }
+
+  @action
+  void editText(String oldText, String newText) {
+    if (texts.contains(oldText)) {
+      final index = texts.indexOf(oldText);
+      texts[index] = newText;
+      saveTextsToSharedPreferences();
+    }
   }
 
   Future<void> saveTextsToSharedPreferences() async {

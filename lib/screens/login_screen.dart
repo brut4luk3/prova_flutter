@@ -49,9 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (response.statusCode == 200) {
-        print('Login bem-sucedido');
-
-        // Obtenha os textos salvos
         List<String>? savedTexts = await loadTextsFromSharedPreferences();
 
         Navigator.push(
